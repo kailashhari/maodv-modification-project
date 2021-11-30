@@ -1,0 +1,21 @@
+
+for {set i 0} {$i < 10} {incr i} {
+	set udp_($i) [new Agent/UDP]
+	$udp_($i) set dst_addr_ 0xE000000
+	$ns_ attach-agent $node_($i) $udp_($i)
+
+	set cbr_($i) [new Application/Traffic/CBR]
+	$cbr_($i) set packetSize_ 256
+	$cbr_($i) set interval_ 0.50
+	$cbr_($i) set random_ 1
+	# send enough packets to keep simulation nearly busy: 2 packets
+	# a second, starting at 30, stopping at 899: 2*870 = 1740
+	$cbr_($i) set maxpkts_ 1740
+	$cbr_($i) attach-agent $udp_($i)
+	$cbr_($i) set dst_ 0xE000000
+	$ns_ at 30.0 "$cbr_($i) start"
+}
+
+for {set i 20} {$i < 50} {incr i} {
+	$ns_ at 0.0100000000 "$node_($i) aodv-join-group 0xE000000"
+}

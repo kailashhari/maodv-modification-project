@@ -1,0 +1,25 @@
+Position is X, Y, Z, Node Speed,Energy
+0 257.411131 81.463926 0.0000000 0 1.999323
+Position is X, Y, Z, Node Speed,Energy
+0 257.411700 81.463976 0.0000000 0 1.998868
+Position is X, Y, Z, Node Speed,Energy
+0 257.412010 81.464003 0.0000000 0 1.998666
+Position is X, Y, Z, Node Speed,Energy
+0 257.520171 81.473537 0.0000000 0 1.997894
+Position is X, Y, Z, Node Speed,Energy
+0 257.520267 81.473546 0.0000000 0 1.997802
+Position is X, Y, Z, Node Speed,Energy
+0 257.520748 81.473588 0.0000000 0 1.997333
+Position is X, Y, Z, Node Speed,Energy
+0 257.521636 81.473666 0.0000000 0 1.996664
+Position is X, Y, Z, Node Speed,Energy
+0 257.521833 81.473684 0.0000000 0 1.996587
+0001 0 1.996423
+ is X, Y, Z, Node Speed,Energy
+2 884.211892 212.438351 0.0000002 0 1.995243
+1.997243
+Position is X, Y, Z, Node Speed,Energy
+6 1029.475653 229.119135 0.0000006 0 1.995774
+Position is X, Y, Z, Node Speed,Energy
+6 1029.473955 229.119230 0.0000006 0 1.995547
+0.00000021 0 1.995751

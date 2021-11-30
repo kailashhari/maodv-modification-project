@@ -1,0 +1,922 @@
+5,27c5,25
+< Permission to use, copy, modify, and distribute this
+< software and its documentation is hereby granted (including for
+< commercial or for-profit use), provided that both the copyright notice and this permission notice appear in all copies of the software, derivative works, or modified versions, and any portions thereof, and that both notices appear in supporting documentation, and that credit is given to Carnegie Mellon University in all publications reporting on direct or indirect use of this code or its derivatives.
+< 
+< ALL CODE, SOFTWARE, PROTOCOLS, AND ARCHITECTURES DEVELOPED BY THE CMU
+< MONARCH PROJECT ARE EXPERIMENTAL AND ARE KNOWN TO HAVE BUGS, SOME OF
+< WHICH MAY HAVE SERIOUS CONSEQUENCES. CARNEGIE MELLON PROVIDES THIS
+< SOFTWARE OR OTHER INTELLECTUAL PROPERTY IN ITS ``AS IS'' CONDITION,
+< AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+< THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+< PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
+< BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+< CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+< SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+< BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+< WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+< OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE OR
+< INTELLECTUAL PROPERTY, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+< DAMAGE.
+< 
+< Carnegie Mellon encourages (but does not require) users of this
+< software or intellectual property to return any improvements or
+< extensions that they make, and to grant Carnegie Mellon the rights to redistribute these changes without encumbrance.
+---
+> Redistribution and use in source and binary forms, with or without
+> modification, are permitted provided that the following conditions are met:
+> 
+> 1. Redistributions of source code must retain the above copyright notice,
+> this list of conditions and the following disclaimer.
+> 2. Redistributions in binary form must reproduce the above copyright notice,
+> this list of conditions and the following disclaimer in the documentation
+> and/or other materials provided with the distribution.
+> 3. The name of the author may not be used to endorse or promote products
+> derived from this software without specific prior written permission.
+> 
+> THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+> IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+> OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+> IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+> SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+> PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+> OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+> WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+> OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+> ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+48,49d45
+< static int extra_route_reply = 0;
+< static int limit_route_request = 0;
+96,99d91
+< #ifdef MULTICAST
+<       ntimer.handle((Event *)0);
+<       grphtimer.handle((Event *)0);
+< #else
+104d95
+< #endif
+140,142c131
+< 
+< #ifdef MULTICAST
+<     else if (strcmp(argv[1], "aodv-join-group") == 0)
+---
+>     else if (strcmp(argv[1], "port-dmux") == 0)
+144,150c133,134
+<       nsaddr_t mcast_addr = atoi(argv[2]);
+<       if (mcast_addr < IP_MULTICAST)
+<         return TCL_ERROR;
+<       aodv_mt_entry *mt = mtable.mt_lookup(mcast_addr);
+<       if (mt == 0)
+<         mt = mtable.mt_add(mcast_addr);
+<       if (mt->mt_node_status == ON_GROUP)
+---
+>       dmux_ = (PortClassifier *)TclObject::lookup(argv[2]);
+>       if (dmux_ == 0)
+152,171c136,137
+<         return TCL_OK;
+<       }
+<       if (mt->mt_node_status == ON_TREE)
+<       {
+<         mt->mt_node_status = ON_GROUP;
+<         return TCL_OK;
+<       }
+< 
+<       // node is not on the tree
+<       mt->mt_flags = MTF_IN_REPAIR;
+<       mt->mt_grp_leader_addr = INFINITY8;
+<       mt->mt_node_status = ON_GROUP;
+< 
+<       sendMRQ(mt, RREQ_J);
+<       return TCL_OK;
+<     }
+<     else if (strcmp(argv[1], "aodv-leave-group") == 0)
+<     {
+<       nsaddr_t mcast_addr = atoi(argv[2]);
+<       if (mcast_addr < IP_MULTICAST)
+---
+>         fprintf(stderr, "%s: %s lookup of %s failed\n", __FILE__,
+>                 argv[1], argv[2]);
+173,182d138
+<       aodv_mt_entry *mt = mtable.mt_lookup(mcast_addr);
+<       if (mt == 0 || mt->mt_node_status != ON_GROUP)
+<         return TCL_OK;
+<       if (mt->mt_grp_leader_addr != index)
+<         mt_prune(mt->mt_dst);
+<       else
+<       {
+<         mt->mt_node_status = ON_TREE;
+<         mt->mt_grp_leader_addr = INFINITY8;
+<         selectLeader(mt, INFINITY8);
+186d141
+< #endif
+197,201c152
+<                           rtimer(this), lrtimer(this), rqueue(),
+<                           /*** added for multicast ***/
+<                           grphtimer(this), rtetimer(this),
+<                           prune_timer(this), p_timer(this)
+< /***************************/
+---
+>                           rtimer(this), lrtimer(this), rqueue()
+211,216d161
+< #ifdef MULTICAST
+<   hello_timeout = 0;
+<   LIST_INIT(&pihead);
+<   sendHello();
+< #endif
+< 
+231c176
+< void HelloTimer::handle(Event *p)
+---
+> void HelloTimer::handle(Event *)
+233,237d177
+< 
+< #ifdef MULTICAST
+<   Packet::free((Packet *)p);
+<   agent->sendHello();
+< #else
+243d182
+< #endif
+249,255d187
+< 
+< #ifdef MULTICAST
+< #ifdef PREDICTION
+<   agent->mt_link_purge();
+< #endif
+<   Scheduler::instance().schedule(this, &intr, 0.5);
+< #else
+257d188
+< #endif
+289c220
+<     fprintf(stderr, "Node %d: Dst - %d, failed local repair\n", index, rt->rt_dst);
+---
+>     fprintf(stderr, "Dst - %d, failed local repair\n", rt->rt_dst);
+407,415d337
+< #ifdef IMPROVEMENT
+<   if (rt->rt_flags != RTF_DOWN && rt->rt_nexthop != ch->next_hop_)
+<   {
+<     ch->next_hop_ = rt->rt_nexthop;
+<     Scheduler::instance().schedule(target_, p, 0.);
+<     return;
+<   }
+< #endif
+< 
+429,443d350
+<   {
+< 
+< #ifdef IMPROVEMENT
+<     if (rt->rt_flags != RTF_DOWN &&
+<         (rt->rt_retry_pid < ch->uid() || rt->rt_retry_times == 0))
+<     {
+<       if (rt->rt_retry_times == 0)
+<         rt->rt_retry_times = 1;
+<       if (rt->rt_retry_pid < ch->uid())
+<         rt->rt_retry_pid = ch->uid();
+<       ch->next_hop_ = rt->rt_nexthop;
+<       Scheduler::instance().schedule(target_, p, 0.);
+<       return;
+<     }
+< #endif
+444a352
+>   {
+453,456d360
+< 
+< #ifdef MULTICAST
+<     handle_link_failure(broken_nbr);
+< #endif
+476,477d379
+< 
+< #ifndef MULTICAST
+479,480d380
+< #endif
+< 
+534,541d433
+< 
+< #ifdef PREDICTION
+<   rt->rt_prevnode_warning = 0;
+< #endif
+< #ifdef IMPROVEMENT
+<   rt->rt_retry_pid = 0;
+<   rt->rt_retry_times = 0;
+< #endif
+590,591d481
+<   //if (ch->uid() == 32 && index == 3) printf("---------rt flag is %d, %.9f\n", rt->rt_flags, CURRENT_TIME);
+< 
+595,613d484
+< 
+< #ifdef PREDICTION
+<     double breakTime = 2000.0;
+< 
+<     if (ch->num_forwards() != 0 && ch->next_hop_ == index)
+<     {
+<       Node *currentNode = Node::get_node_by_address(index);
+<       breakTime = currentNode->getTime(ch->prev_hop_);
+<       if (breakTime < 2000.0 && breakTime > CURRENT_TIME &&
+<           (breakTime - CURRENT_TIME < PREDICTION_TIME_FOR_UNICAST) &&
+<           (rt->rt_prevnode_warning == 0))
+<       {
+<         //printf("\nPREDICTION:: at %.9f on node %d prev node %d , dst %d, will break at %.9f\n", CURRENT_TIME, index, ch->prev_hop_, ih->daddr(), breakTime);
+<         sendLPW(ch->prev_hop_, breakTime);
+<         rt->rt_prevnode_warning++;
+<       }
+<     }
+< #endif
+< 
+616,643d486
+< 
+< #ifdef PREDICTION
+<   else if (rt->rt_flags == RTF_PREDICTION || rt->rt_flags == RTF_P_LINK)
+<   {
+<     if (rt->rt_expire <= CURRENT_TIME)
+<     {
+<       rt->rt_seqno++;
+<       rt_down(rt);
+< 
+<       if (index == ih->saddr())
+<       {
+<         rqueue.enque(p);
+<         sendRequest(ih->daddr());
+<       }
+<       else
+<         forward(rt, p, NO_DELAY); //because this is only prediction broken time, try to forward it anyway.
+<     }
+<     else
+<     {
+<       forward(rt, p, NO_DELAY);
+<       if (index == ih->saddr())
+<       {
+<         sendRequest(ih->daddr());
+<       }
+<     }
+<   }
+< #endif
+< 
+666,670d508
+< 
+< #ifdef MULTICAST
+<     sendMACT(rt->rt_dst, MACT_P, 0, ch->prev_hop_);
+< #endif
+< 
+703,710c541
+<     if (
+< #ifdef PREDICTION
+<         (rt->rt_flags == RTF_UP ||
+<          rt->rt_flags == RTF_P_LINK || rt->rt_flags == RTF_PREDICTION)
+< #else
+<         (rt->rt_flags == RTF_UP)
+< #endif
+<         && (rt->rt_expire < now))
+---
+>     if ((rt->rt_flags == RTF_UP) && (rt->rt_expire < now))
+727,733c558
+<     else if
+< #ifdef PREDICTION
+<         (rt->rt_flags == RTF_UP ||
+<          rt->rt_flags == RTF_P_LINK || rt->rt_flags == RTF_PREDICTION)
+< #else
+<         (rt->rt_flags == RTF_UP)
+< #endif
+---
+>     else if (rt->rt_flags == RTF_UP)
+735,737c560,565
+< 
+< #ifdef PREDICTION
+<       if (rt->rt_flags == RTF_UP)
+---
+>       // If the route is not expired,
+>       // and there are packets in the sendbuffer waiting,
+>       // forward them. This should not be needed, but this extra
+>       // check does no harm.
+>       assert(rt->rt_hops != INFINITY2);
+>       while ((p = rqueue.deque(rt->rt_dst)))
+739,750c567,568
+< #endif
+<         // If the route is not expired,
+<         // and there are packets in the sendbuffer waiting,
+<         // forward them. This should not be needed, but this extra
+<         // check does no harm.
+<         assert(rt->rt_hops != INFINITY2);
+<         while ((p = rqueue.deque(rt->rt_dst)))
+<         {
+<           forward(rt, p, delay);
+<           delay += ARP_DELAY;
+<         }
+< #ifdef PREDICTION
+---
+>         forward(rt, p, delay);
+>         delay += ARP_DELAY;
+752d569
+< #endif
+780,794d596
+< #ifdef MULTICAST
+<   if (ih->saddr() != index || ch->num_forwards() != 0)
+<   {
+<     AODV_Neighbor *nb = nb_lookup(ch->prev_hop_);
+<     if (nb == 0)
+<     {
+<       nb_insert(ch->prev_hop_);
+<     }
+<     else
+<     {
+<       nb->nb_expire = CURRENT_TIME + ALLOWED_HELLO_LOSS * MaxHelloInterval;
+<     }
+<   }
+< #endif
+< 
+808c610,612
+<   * Add the IP Header
+---
+>   * Add the IP Header.  
+>   * TCP adds the IP header too, so to avoid setting it twice, we check if
+>   * this packet is not a TCP or ACK segment.
+810c614,617
+<     ch->size() += IP_HDR_LEN;
+---
+>     if (ch->ptype() != PT_TCP && ch->ptype() != PT_ACK)
+>     {
+>       ch->size() += IP_HDR_LEN;
+>     }
+812a620
+>     {
+813a622
+>     }
+821,827d629
+< 
+< #ifdef MULTICAST
+<     if (ih->daddr() < IP_MULTICAST)
+<       drop(p, DROP_RTR_ROUTE_LOOP);
+<     else
+<       Packet::free(p);
+< #else
+829,830d630
+< #endif
+< 
+838,841d637
+< 
+< #ifdef MULTICAST
+<     ih->ttl_--;
+< #else
+850d645
+< #endif
+852,860d646
+< 
+< #ifdef MULTICAST
+<   if ((u_int32_t)ih->daddr() < IP_MULTICAST)
+<     rt_resolve(p);
+<   else if ((u_int32_t)ih->daddr() == IP_BROADCAST)
+<     forward((aodv_rt_entry *)0, p, NO_DELAY);
+<   else
+<     mt_resolve(p);
+< #else
+866d651
+< #endif
+872d656
+<   struct hdr_ip *ih = HDR_IP(p);
+874,875c658,659
+<   assert(ih->sport() == RT_PORT);
+<   assert(ih->dport() == RT_PORT);
+---
+>   assert(HDR_IP(p)->sport() == RT_PORT);
+>   assert(HDR_IP(p)->dport() == RT_PORT);
+896,898d679
+< #ifdef MULTICAST
+<     Packet::free(p);
+< #else
+900,917d680
+< #endif
+<     break;
+< 
+< #ifdef PREDICTION
+<   case AODVTYPE_LPW:
+<   {
+<     struct hdr_aodv_lpw *rp = HDR_AODV_LPW(p);
+<     recvLPW(ih->saddr(), rp->breakTime);
+<     Packet::free(p);
+<   }
+<   break;
+< 
+<   case AODVTYPE_RPE:
+<     recvRPE(p);
+<     break;
+< 
+<   case AODVTYPE_LINK_RREQ:
+<     recvRequest_P(p);
+919,933d681
+< #endif
+< 
+< #ifdef MULTICAST
+<   case AODVTYPE_MACT:
+<     recvMACT(p);
+<     break;
+< 
+<   case AODVTYPE_GRPH:
+<     recvMGRPH(p);
+<     break;
+< 
+<   case AODVTYPE_WARN:
+<     recvMWARN(p);
+<     break;
+< #endif
+976,977d723
+< 
+< #ifndef PREDICTION
+979d724
+< #endif
+995,1004d739
+< #ifdef PREDICTION
+<   if (rt0->rt_flags == RTF_P_LINK)
+<   {
+<     Packet::free(p);
+<     return;
+<   }
+<   else
+<     id_insert(rq->rq_src, rq->rq_bcast_id);
+< #endif
+< 
+1033d767
+<     double delay = 0.0;
+1050,1079d783
+< #ifdef MULTICAST
+<   if (rq->rq_dst >= IP_MULTICAST)
+<   {
+<     if (rq->rq_flags != RREQ_NO_FLAG && (CURRENT_TIME - rq->rq_timestamp) > 2 * RREP_WAIT_TIME)
+<     {
+<       Packet::free(p);
+<       return;
+<     }
+< 
+<     switch (rq->rq_flags)
+<     {
+<     case RREQ_NO_FLAG:
+<       recvMRQ_NOFLAG(p);
+<       return;
+<     case RREQ_J:
+<       recvMRQ_J(p);
+<       return;
+<     case RREQ_R:
+<       recvMRQ_R(p);
+<       return;
+<     case RREQ_JR:
+<       recvMRQ_JR(p);
+<       return;
+<     default:
+<       Packet::free(p);
+<       return;
+<     }
+<   }
+< #endif
+< 
+1098,1108c802
+< #ifdef MULTICAST
+<     sendReply(rq->rq_src, // IP Destination
+<               rq->rq_flags,
+<               0,                 // Hop Count
+<               index,             // Dest IP Address
+<               seqno,             // Dest Sequence Num
+<               MY_ROUTE_TIMEOUT,  // Lifetime
+<               rq->rq_timestamp); // timestamp
+< #else
+<     sendReply(rq->rq_src, // IP Destination
+<               0,
+---
+>     sendReply(rq->rq_src,        // IP Destination
+1114,1115d807
+< #endif
+<     /******************************/
+1129,1139d820
+< 
+< #ifdef MULTICAST
+<     sendReply(rq->rq_src,
+<               rq->rq_flags,
+<               rt->rt_hops,
+<               rq->rq_dst,
+<               rt->rt_seqno,
+<               (u_int32_t)(rt->rt_expire - CURRENT_TIME),
+<               //             rt->rt_expire - CURRENT_TIME,
+<               rq->rq_timestamp); // timestamp
+< #else
+1141d821
+<               0,
+1148,1149d827
+< #endif
+< 
+1158d835
+<               rq->rq_flags,
+1164c841
+<               rq->rq_timestamp); // timestamp
+---
+>               rq->rq_timestamp);
+1181,1194d857
+< 
+< #ifdef PREDICTION
+<     if (rt && rt->rt_flags == RTF_P_LINK)
+<     {
+<       struct hdr_aodv_request_link *rq1 = HDR_AODV_REQUEST_LINK(p);
+<       struct hdr_cmn *ch = HDR_CMN(p);
+< 
+<       ch->size() = IP_HDR_LEN + rq1->size();
+<       rq1->rq_type = AODVTYPE_LINK_RREQ;
+<       rq1->from = index;
+<       rq1->to = rt->rt_nexthop;
+<     }
+< #endif
+< 
+1224,1254d886
+< #ifdef MULTICAST
+<   if (rp->rp_dst >= IP_MULTICAST)
+<   {
+<     if (rp->rp_flags != RREP_NO_FLAG && (CURRENT_TIME - rp->rp_timestamp) > 2 * RREP_WAIT_TIME)
+<     {
+<       Packet::free(p);
+<       return;
+<     }
+< 
+<     switch (rp->rp_flags)
+<     {
+<     case RREP_NO_FLAG:
+<       break;
+<     case RREP_J:
+<       recvMRP_J(p);
+<       return;
+<     case RREP_R:
+<       recvMRP_R(p);
+<       return;
+<     case RREP_JR:
+<       recvMRP_JR(p);
+<       return;
+<     default:
+<       Packet::free(p);
+<       return;
+<     }
+<   }
+< 
+<   rp->rp_hop_count++;
+< #endif
+< 
+1265,1274d896
+< #ifdef PREDICTION
+<   struct hdr_cmn *ch = HDR_CMN(p);
+<   if ((rt->rt_flags == RTF_P_LINK) &&
+<       rt->rt_nexthop == ch->prev_hop_)
+<   {
+<     Packet::free(p);
+<     return;
+<   }
+< #endif
+< 
+1299c921
+<       rt->rt_disc_latency[rt->hist_indx] = (CURRENT_TIME - rp->rp_timestamp) / (double)rp->rp_hop_count;
+---
+>       rt->rt_disc_latency[(unsigned char)rt->hist_indx] = (CURRENT_TIME - rp->rp_timestamp) / (double)rp->rp_hop_count;
+1317d938
+< 
+1347,1348d967
+< 
+< #ifndef MULTICAST
+1350,1351d968
+< #endif
+< 
+1388,1392d1004
+< 
+< #ifdef PREDICTION
+<       assert(rt->rt_flags == RTF_UP ||
+<              rt->rt_flags == RTF_P_LINK || rt->rt_flags == RTF_PREDICTION);
+< #else
+1394,1395d1005
+< #endif
+< 
+1459,1461c1069,1075
+<   /*** added for multicast ***/
+<   ch->prev_hop_ = index;
+<   /**************************/
+---
+>   if (((ch->ptype() != PT_AODV && ch->direction() == hdr_cmn::UP) &&
+>        ((u_int32_t)ih->daddr() == IP_BROADCAST)) ||
+>       (ih->daddr() == here_.addr_))
+>   {
+>     dmux_->recv(p, 0);
+>     return;
+>   }
+1465,1471d1078
+< #ifdef PREDICTION
+<     assert(rt->rt_flags == RTF_UP ||
+<            rt->rt_flags == RTF_P_LINK || rt->rt_flags == RTF_PREDICTION);
+< 
+<     if (rt->rt_flags == RTF_UP)
+<       rt->rt_expire = CURRENT_TIME + ACTIVE_ROUTE_TIMEOUT;
+< #else
+1474,1475d1080
+< #endif
+< 
+1492,1501c1097,1108
+<     /*
+<     *  Jitter the sending of broadcast packets by 10ms
+<     */
+< 
+< #ifdef MULTICAST
+<     controlNextHello();
+< #endif
+< 
+<     Scheduler::instance().schedule(target_, p,
+<                                    0.01 * Random::uniform());
+---
+>     if (ch->ptype() == PT_AODV)
+>     {
+>       /*
+>       *  Jitter the sending of AODV broadcast packets by 10ms
+>       */
+>       Scheduler::instance().schedule(target_, p,
+>                                      0.01 * Random::uniform());
+>     }
+>     else
+>     {
+>       Scheduler::instance().schedule(target_, p, 0.); // No jitter
+>     }
+1554,1558d1160
+< 
+< #ifdef MULTICAST
+<     rt->rt_req_times = 0;
+< #endif
+< 
+1569,1570c1171,1172
+<   fprintf(stderr, "%2d sending Route Request, dst: %d\n",
+<           index, rt->rt_dst);
+---
+>   fprintf(stderr, "(%2d) - %2d sending Route Request, dst: %d\n",
+>           ++route_request, index, rt->rt_dst);
+1578,1581d1179
+< #ifdef MULTICAST
+<   rt->rt_req_times++;
+< #endif
+< 
+1641d1238
+<   rq->rq_flags = RREQ_NO_FLAG;
+1652,1677d1248
+< #ifdef PREDICTION
+<   if (rt->rt_flags == RTF_P_LINK)
+<   {
+<     struct hdr_aodv_request_link *rqlk = HDR_AODV_REQUEST_LINK(p);
+<     rqlk->rq_type = AODVTYPE_LINK_RREQ;
+<     rqlk->from = index;
+<     rqlk->to = rt->rt_nexthop;
+<   }
+< #endif
+< 
+< #ifdef MULTICAST
+<   if (rq->rq_dst >= IP_MULTICAST && rt->rt_req_times == 1)
+<   {
+<     aodv_glt_entry *glt = gltable.glt_lookup(rq->rq_dst);
+<     if (glt && glt->glt_expire > CURRENT_TIME)
+<     {
+<       ch->addr_type() = NS_AF_INET;
+<       ch->next_hop_ = glt->glt_next_hop;
+<       ih->daddr() = glt->glt_grp_leader_addr;
+<     }
+<   }
+< 
+<   if (ih->daddr() == IP_BROADCAST)
+<     controlNextHello();
+< #endif
+< 
+1681,1685c1252,1253
+< /*please note, the sendReply auguments is not the same as original one 
+< because of adding multicast functions*/
+< void AODV::sendReply(nsaddr_t ipdst, u_int8_t flags, u_int32_t hop_count, nsaddr_t rpdst,
+<                      u_int32_t rpseq, u_int32_t lifetime, double timestamp,
+<                      u_int8_t hops_grp_leader, nsaddr_t grp_leader_addr)
+---
+> void AODV::sendReply(nsaddr_t ipdst, u_int32_t hop_count, nsaddr_t rpdst,
+>                      u_int32_t rpseq, u_int32_t lifetime, double timestamp)
+1694c1262
+<   fprintf(stderr, "sending Reply from %d at %.9f\n", index, Scheduler::instance().clock());
+---
+>   fprintf(stderr, "sending Reply from %d at %.2f\n", index, Scheduler::instance().clock());
+1699,1703d1266
+< 
+<   /*** added for multicast ***/
+<   rp->rp_flags = flags;
+<   /***************************/
+< 
+1728,1740c1291
+< #ifdef MULTICAST
+<   if (rp->rp_dst >= IP_MULTICAST && flags == RREP_J)
+<   {
+<     struct hdr_aodv_reply_ext *rpe = (struct hdr_aodv_reply_ext *)(HDR_AODV_REPLY(p) + rp->size());
+<     rpe->type = AODVTYPE_RREP_EXT;
+<     rpe->length = AODVTYPE_RREP_EXT_LEN;
+<     rpe->hops_grp_leader = hops_grp_leader;
+<     rpe->grp_leader_addr = grp_leader_addr;
+<     ch->size() += rpe->size();
+<   }
+< #endif
+< 
+<   Scheduler::instance().schedule(target_, p, 0.0);
+---
+>   Scheduler::instance().schedule(target_, p, 0.);
+1773,1776d1323
+< #ifdef MULTICAST
+<   controlNextHello();
+< #endif
+< 
+1790,1811d1336
+< 
+< #ifdef MULTICAST
+<   aodv_mt_entry *mt;
+<   bool cont = false;
+<   for (mt = mtable.head(); mt; mt = mt->mt_link.le_next)
+<   {
+<     if (mt->mt_node_status != NOT_ON_TREE)
+<     {
+<       cont = true;
+<       break;
+<     }
+<   }
+< 
+<   if (!cont)
+<     return;
+< 
+<   if (hello_timeout > CURRENT_TIME)
+<     return;
+< 
+<   controlNextHello();
+< #endif
+< 
+1842,1844d1366
+< #ifdef MULTICAST
+<   Scheduler::instance().schedule(target_, p, 0.01 * Random::uniform());
+< #else
+1846d1367
+< #endif
+1851,1854d1371
+< 
+< #ifdef MULTICAST
+<   Packet::free(p);
+< #else
+1868a1386
+> 
+1870d1387
+< #endif
+1878,1881d1394
+< 
+< #ifdef MULTICAST
+<   nb->nb_expire = CURRENT_TIME + ALLOWED_HELLO_LOSS * MaxHelloInterval;
+< #else
+1884,1885d1396
+< #endif
+< 
+1926d1436
+< #ifndef MULTICAST
+1928d1437
+< #endif
+1947,2078d1455
+< 
+< #ifdef MULTICAST
+<       mt_nb_fail(nb->nb_addr);
+< #endif
+<     }
+<   }
+< }
+< 
+< /*** added for prediction for unicast ***/
+< void AODV::recvLPW(nsaddr_t prev, double breakTime)
+< {
+< 
+<   aodv_rt_entry *rt = rtable.head();
+<   Packet *p = Packet::alloc();
+<   struct hdr_aodv_rpe *rpe = HDR_AODV_RPE(p);
+< 
+<   rpe->breakTime = breakTime;
+<   rpe->DestCount = 0;
+< 
+<   for (; rt; rt = rt->rt_link.le_next)
+<   {
+<     if (rt->rt_nexthop == prev &&
+<         rt->rt_flags != RTF_DOWN && rt->rt_flags != RTF_P_LINK &&
+<         rt->rt_expire > breakTime)
+<     {
+< 
+<       rt->rt_flags = RTF_P_LINK;
+<       rt->rt_expire = breakTime;
+< 
+<       rpe->vulnerable_dst[rpe->DestCount] = rt->rt_dst;
+<       rpe->vulnerable_dst_seqno[rpe->DestCount] = rt->rt_seqno;
+<       rpe->DestCount += 1;
+<       printf("recvLPW: %.9f, at node %d, to dest %d, with nexthop %d, route will break at %.9f\n", CURRENT_TIME, index, rt->rt_dst, prev, breakTime);
+<     }
+<   }
+< 
+<   if (rpe->DestCount > 0)
+<     sendRPE(p);
+<   else
+<     Packet::free(p);
+< }
+< 
+< void AODV::sendLPW(nsaddr_t prev, double breakTime)
+< {
+< 
+<   Packet *p = Packet::alloc();
+<   struct hdr_cmn *ch = HDR_CMN(p);
+<   struct hdr_ip *ih = HDR_IP(p);
+<   struct hdr_aodv_lpw *rp = HDR_AODV_LPW(p);
+< 
+<   ch->ptype() = PT_AODV;
+<   ch->size() = IP_HDR_LEN + rp->size();
+<   ch->iface() = -2;
+<   ch->error() = 0;
+<   ch->addr_type() = NS_AF_INET;
+<   ch->prev_hop_ = index; // AODV hack
+<   ch->next_hop_ = prev;
+< 
+<   ih->saddr() = index;
+<   ih->daddr() = prev;
+<   ih->sport() = RT_PORT;
+<   ih->dport() = RT_PORT;
+<   ih->ttl_ = 1;
+< 
+<   rp->rp_type = AODVTYPE_LPW;
+<   rp->rp_dst = prev;
+<   rp->breakTime = breakTime;
+< 
+<   Scheduler::instance().schedule(target_, p, 0.0);
+< }
+< void AODV::sendRPE(Packet *p)
+< {
+<   struct hdr_cmn *ch = HDR_CMN(p);
+<   struct hdr_ip *ih = HDR_IP(p);
+<   struct hdr_aodv_rpe *rp = HDR_AODV_RPE(p);
+< 
+<   // ch->uid() = 0;
+<   ch->ptype() = PT_AODV;
+<   ch->size() = IP_HDR_LEN + rp->size();
+<   ch->iface() = -2;
+<   ch->error() = 0;
+<   ch->addr_type() = NS_AF_NONE;
+<   ch->next_hop_ = MAC_BROADCAST;
+<   ch->prev_hop_ = index; // AODV hack
+< 
+<   ih->saddr() = index;
+<   ih->daddr() = IP_BROADCAST;
+<   ih->sport() = RT_PORT;
+<   ih->dport() = RT_PORT;
+<   ih->ttl_ = 1;
+< 
+<   rp->rp_type = AODVTYPE_RPE;
+< 
+< #ifdef MULTICAST
+<   controlNextHello();
+< #endif
+< 
+<   //send with jitter
+<   Scheduler::instance().schedule(target_, p, 0.01 * Random::uniform());
+< }
+< 
+< void AODV::recvRPE(Packet *p)
+< {
+<   struct hdr_ip *ih = HDR_IP(p);
+<   struct hdr_aodv_rpe *rpe = HDR_AODV_RPE(p);
+<   aodv_rt_entry *rt;
+<   u_int8_t i;
+<   Packet *np = Packet::alloc();
+<   struct hdr_aodv_rpe *nrpe = HDR_AODV_RPE(np);
+< 
+<   nrpe->DestCount = 0;
+<   nrpe->breakTime = rpe->breakTime;
+< 
+<   for (i = 0; i < rpe->DestCount; i++)
+<   {
+<     // For each vulnerable route
+<     rt = rtable.rt_lookup(rpe->vulnerable_dst[i]);
+<     if (rt && (rt->rt_nexthop == ih->saddr()) &&
+<         (rt->rt_seqno <= rpe->vulnerable_dst_seqno[i]) &&
+<         (rt->rt_flags == RTF_UP) &&
+<         (rt->rt_expire > rpe->breakTime))
+<     {
+< 
+<       rt->rt_seqno = rpe->vulnerable_dst_seqno[i];
+<       rt->rt_expire = rpe->breakTime;
+<       rt->rt_flags = RTF_PREDICTION;
+< 
+<       nrpe->vulnerable_dst[nrpe->DestCount] = rt->rt_dst;
+<       nrpe->vulnerable_dst_seqno[nrpe->DestCount] = rt->rt_seqno;
+<       nrpe->DestCount += 1;
+< 
+<       printf("recvRPE: %.9f, at node %d, to dest %d, with nexthop %d, route will break at other link at %.9f\n", CURRENT_TIME, index, rt->rt_dst, ih->saddr(), rpe->breakTime);
+2081,2098d1457
+< 
+<   if (nrpe->DestCount > 0)
+<     sendRPE(np);
+<   else
+<     Packet::free(np);
+< 
+<   Packet::free(p);
+< }
+< 
+< void AODV::recvRequest_P(Packet *p)
+< {
+<   struct hdr_ip *ih = HDR_IP(p);
+<   struct hdr_aodv_request_link *rqlk = HDR_AODV_REQUEST_LINK(p);
+< 
+<   if (ih->saddr() == rqlk->from && rqlk->to == index)
+<     Packet::free(p);
+<   else
+<     recvRequest(p);
+2100d1458
+< /**************************************/

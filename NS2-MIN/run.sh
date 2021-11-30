@@ -1,0 +1,1 @@
+docker run -ti  --net=host --env="DISPLAY" --volume="$HOME/.Xauthority:/root/.Xauthority:rw" --volume="$HOME/Desktop/nLab/NS2/scripts:/labs" nlab
